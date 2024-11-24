@@ -1,0 +1,11 @@
+[package]
+name = "xgb-rs"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+members = ["xgb-sys"]
+
+[dependencies]
+thiserror = "2.0.3"
+xgb_sys = { path = "xgb-sys" }

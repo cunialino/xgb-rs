@@ -1,0 +1,10 @@
+[package]
+name = "xgb_sys"
+version = "0.1.0"
+edition = "2021"
+build = "build.rs"
+links = "xgboost"
+
+[build-dependencies]
+bindgen = "0.69.1"
+cmake = "0.1.51"
