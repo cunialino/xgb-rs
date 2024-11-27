@@ -2,8 +2,8 @@ use std::ffi::CString;
 use std::os::raw::{c_float, c_void};
 use thiserror::Error;
 use xgb_sys::{
-    XGBoosterCreate, XGBoosterFree, XGBoosterLoadModel, XGBoosterPredict, XGBoosterSaveModel,
-    XGBoosterSetParam, XGBoosterUpdateOneIter,
+    XGBoosterCreate, XGBoosterFree, XGBoosterLoadModel, XGBoosterPredictFromDMatrix,
+    XGBoosterSaveModel, XGBoosterSetParam, XGBoosterUpdateOneIter,
 };
 
 use crate::dmatrix::DMatrix;
@@ -99,24 +99,23 @@ impl Booster {
 
     pub fn predict(&self, data: &DMatrix) -> Result<Vec<f32>, XGBoostError> {
         let mut out_result: *const c_float = std::ptr::null();
-        let out_len: i32 = 1;
         let mut out_shape: u64 = 0;
 
         // Run the prediction
+        let conf = CString::new("{\"training\": false, \"type\": 0, \"iteration_begin\": 0, \"iteration_end\": 0, \"strict_shape\": false}").expect("Cannot create pred config");
         unsafe {
-            let predict_result = XGBoosterPredict(
+            let predict_result = XGBoosterPredictFromDMatrix(
                 self.handle,
                 data.handle,
-                0, // Prediction options
-                0, // Output margin
-                out_len,
+                conf.as_ptr(),
+                &mut (&data.rows as *const u64) as *mut *const u64,
                 &mut out_shape,
                 &mut out_result,
             );
 
             if predict_result == 0 {
                 // Convert the raw pointer to a slice and return the prediction result
-                let slice = std::slice::from_raw_parts(out_result, out_len as usize);
+                let slice = std::slice::from_raw_parts(out_result, data.rows as usize);
                 Ok(slice.to_vec())
             } else {
                 Err(XGBoostError::Predict)

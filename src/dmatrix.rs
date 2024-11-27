@@ -10,7 +10,7 @@ pub enum DMatrixError {
 
 pub struct DMatrix {
     pub(crate) handle: *mut c_void,
-    rows: u64,
+    pub(crate) rows: u64,
     _cols: u64,
 }
 
