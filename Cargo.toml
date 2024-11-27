@@ -9,3 +9,6 @@ members = ["xgb-sys"]
 [dependencies]
 thiserror = "2.0.3"
 xgb_sys = { path = "xgb-sys" }
+
+[dev-dependencies]
+rand = "0.8.5"
