@@ -1,23 +1,17 @@
 use cmake::Config;
 use std::env;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 fn main() {
     let target = env::var("TARGET").expect("Could not get TARGET environment variable");
     let out_dir = env::var("OUT_DIR").expect("Could not get OUT_DIR environment variable");
-    let xgb_root = Path::new(&out_dir).join("xgboost");
+    let xgb_root = Path::new("xgboost");
     // Ensure the file is writable by removing any existing version
     let (stdcpp, gomp) = if target.contains("apple") {
         ("c++", "omp")
     } else {
         ("stdc++", "gomp")
     };
-
-    Command::new("cp")
-        .args(["-r", "xgboost", xgb_root.to_str().unwrap()])
-        .status()
-        .expect("Failed to copy ./xgboost to OUT_DIR");
 
     // Build XGBoost with CMake as a static library
     let xgb_root = xgb_root
