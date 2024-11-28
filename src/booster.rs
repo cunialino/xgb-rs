@@ -2,8 +2,8 @@ use std::ffi::CString;
 use std::os::raw::{c_float, c_void};
 use thiserror::Error;
 use xgb_sys::{
-    XGBoosterCreate, XGBoosterFree, XGBoosterLoadModel, XGBoosterPredictFromDMatrix,
-    XGBoosterSaveModel, XGBoosterSetParam, XGBoosterUpdateOneIter,
+    XGBoosterCreate, XGBoosterFree, XGBoosterGetNumFeature, XGBoosterLoadModel,
+    XGBoosterPredictFromDMatrix, XGBoosterSaveModel, XGBoosterSetParam, XGBoosterUpdateOneIter,
 };
 
 use crate::dmatrix::DMatrix;
@@ -18,10 +18,12 @@ pub enum XGBoostError {
     Predict,
     #[error("Iteration {0} broke")]
     Train(usize),
-    #[error("Cannot set {0} to {0}")]
+    #[error("Cannot set {0} to {1}")]
     Config(String, String),
     #[error("Cannot save model")]
     Save,
+    #[error("Cannot get booster info: {0}")]
+    GetInfo(String),
 }
 
 pub struct Booster {
@@ -48,6 +50,17 @@ impl Booster {
                 Ok(())
             } else {
                 Err(XGBoostError::Config(key.to_string(), value.to_string()))
+            }
+        }
+    }
+
+    pub fn get_number_of_features(&self) -> Result<usize, XGBoostError> {
+        let mut num_feats: u64 = u64::default();
+        unsafe {
+            if XGBoosterGetNumFeature(self.handle, &mut num_feats as *mut u64) == 0 {
+                Ok(num_feats as usize)
+            } else {
+                Err(XGBoostError::GetInfo("Number of Features".to_string()))
             }
         }
     }
@@ -157,10 +170,11 @@ mod tests {
         assert!(status.is_ok(), "Could not add label to train matrix");
         let dtest =
             DMatrix::try_from_data(&[0.1, 0.2, 0.3, 0.4], 2, 2).expect("Cannot create dtest");
-        let booster = Booster::train(&dtrain, &dtest, 3);
-        booster.as_ref().expect("Failed to train");
-        let res = booster.unwrap().save_model("yee.json");
+        let booster = Booster::train(&dtrain, &dtest, 3).expect("Failed to train");
+        let res = booster.save_model("yee.json");
         assert!(res.is_ok(), "Failed to save");
+        let num_feats = booster.get_number_of_features().unwrap();
+        assert_eq!(num_feats, 2, "Wrong number of features");
     }
 
     #[test]
