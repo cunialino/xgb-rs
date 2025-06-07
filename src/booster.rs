@@ -1,8 +1,8 @@
 use std::ffi::CString;
-use std::os::raw::{c_float, c_void};
+use std::os::raw::c_float;
 use thiserror::Error;
 use xgb_sys::{
-    XGBoosterCreate, XGBoosterFree, XGBoosterGetNumFeature, XGBoosterLoadModel,
+    BoosterHandle, XGBoosterCreate, XGBoosterFree, XGBoosterGetNumFeature, XGBoosterLoadModel,
     XGBoosterPredictFromDMatrix, XGBoosterSaveModel, XGBoosterSetParam, XGBoosterUpdateOneIter,
 };
 
@@ -26,8 +26,9 @@ pub enum XGBoostError {
     GetInfo(String),
 }
 
+#[derive(Debug)]
 pub struct Booster {
-    handle: *mut c_void,
+    handle: BoosterHandle,
 }
 
 impl Booster {
@@ -42,7 +43,7 @@ impl Booster {
         }
     }
 
-    pub fn set_conf(&self, key: &str, value: &str) -> Result<(), XGBoostError> {
+    pub fn set_conf(&mut self, key: &str, value: &str) -> Result<(), XGBoostError> {
         let c_key = CString::new(key).unwrap();
         let c_value = CString::new(value).unwrap();
         unsafe {
@@ -99,7 +100,7 @@ impl Booster {
         }
     }
 
-    pub fn load_model(&self, fname: &str) -> Result<(), XGBoostError> {
+    pub fn load_model(&mut self, fname: &str) -> Result<(), XGBoostError> {
         let c_fname = CString::new(fname).unwrap();
         unsafe {
             if XGBoosterLoadModel(self.handle, c_fname.as_ptr()) == 0 {
@@ -137,6 +138,8 @@ impl Booster {
     }
 }
 
+unsafe impl Sync for Booster { }
+
 impl Drop for Booster {
     fn drop(&mut self) {
         unsafe {
@@ -157,7 +160,7 @@ mod tests {
 
     #[test]
     fn test_booster_config() {
-        let booster = Booster::new().unwrap();
+        let mut booster = Booster::new().unwrap();
         let r = booster.set_conf("booster", "gblinear");
         assert!(r.is_ok(), "Could not set param");
     }
@@ -179,7 +182,7 @@ mod tests {
 
     #[test]
     fn test_load_model() {
-        let booster = Booster::new().expect("Failed to create Booster");
+        let mut booster = Booster::new().expect("Failed to create Booster");
 
         // Replace "model.bin" with the path to your XGBoost model file
         let load_result = booster.load_model("yee.json");
@@ -188,7 +191,7 @@ mod tests {
 
     #[test]
     fn test_predict() {
-        let booster = Booster::new().expect("Failed to create Booster");
+        let mut booster = Booster::new().expect("Failed to create Booster");
 
         // Replace "model.bin" with the path to your XGBoost model file
         booster
