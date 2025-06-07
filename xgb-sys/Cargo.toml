@@ -1,6 +1,6 @@
 [package]
 name = "xgb_sys"
-version = "0.1.0"
+version = "3.0.2"
 edition = "2021"
 build = "build.rs"
 links = "xgboost"
