@@ -139,6 +139,7 @@ impl Booster {
 }
 
 unsafe impl Sync for Booster { }
+unsafe impl Send for Booster { }
 
 impl Drop for Booster {
     fn drop(&mut self) {
